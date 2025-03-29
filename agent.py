@@ -2,15 +2,11 @@ import csv
 import re
 
 class Agent:
-    def __init__(self, course_list, episodes):
-        """
-        Initializes the agent with the given game instance.
-
-        Args:
-            game: An instance of the game that the agent will interact with.
-        """
+    def __init__(self, course_list, episodes, request):
         self.course_list = course_list
         self.episodes = episodes
+        self.qtable = {}
+        self.request = request
 
     def are_times_overlapping(times1, times2):
         for t1 in times1:
@@ -22,8 +18,14 @@ class Agent:
                         return False
         return True
 
+    def init_qtable(self):
+        for course in self.course_list:
+            self.qtable[ course['ClassNumber'] ] = 0.0
+
     # def train(episodes):
         # for _ in episodes:
+
+    # def reward():
 
 
 

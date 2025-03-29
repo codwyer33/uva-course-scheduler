@@ -10,10 +10,21 @@ def main():
     parser.parse_times(course_list)
     course_list = parser.consolidate_lectures_and_discussions(course_list)
 
-    for course in course_list:
-        print(course)
+    # for course in course_list:
+    #     print(course)
 
-    agent = Agent(course_list, episodes)
+    request = {'DesiredCourses': [{'Mnemonic': 'CS', 'Number': '7457'}, {'Mnemonic': 'CS', 'Number': '3205'}],
+               'MaxCredits': 19,
+               'MinCredits': 14,
+               'Keywords': ['human', 'database', 'design', 'system']
+               }
+
+    agent = Agent(course_list, episodes, request)
+    agent.init_qtable()
+
+    # for q in agent.qtable:
+    #     print(q, agent.qtable[q])
+
 
 
 main()
