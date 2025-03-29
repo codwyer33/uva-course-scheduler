@@ -48,6 +48,10 @@ class Agent:
         # implement
         # return qtable
 
+    # Return the total number of credits in the current state
+    def get_num_credits(self, state):
+        #implement
+
     # Training function based off of HW4 RL
     def train(self):
         for _ in self.episodes:
@@ -56,7 +60,7 @@ class Agent:
                 state = []
                 action = self.get_action(state)
 
-                if action == 'STOP' or state.get_num_credits() > 23:
+                if action == 'STOP' or self.get_num_credits(state) > 23:
                     condition = 'Done'
 
                 next_state, reward = self.step(state, action)

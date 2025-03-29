@@ -19,7 +19,10 @@ def main():
                'Keywords': ['human', 'database', 'design', 'system']
                }
 
-    epsilon =
+    epsilon = 1.0
+    min_epsilon = .01
+    epsilon_decay = .99
+    gamma = .95
 
     agent = Agent(course_list, episodes, request, epsilon, epsilon_decay, min_epsilon, gamma)
     agent.init_qtable()
