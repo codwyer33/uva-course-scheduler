@@ -19,8 +19,11 @@ def main():
                'Keywords': ['human', 'database', 'design', 'system']
                }
 
-    agent = Agent(course_list, episodes, request)
+    epsilon =
+
+    agent = Agent(course_list, episodes, request, epsilon, epsilon_decay, min_epsilon, gamma)
     agent.init_qtable()
+    agent.train()
 
     # for q in agent.qtable:
     #     print(q, agent.qtable[q])
