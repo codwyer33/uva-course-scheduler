@@ -71,8 +71,10 @@ class Agent:
             return best_action
 
     def step(self, state, action):
-        # implement
         # return next_state, reward
+        next_state = state.append(action)
+        reward = self.get_reward(self.request, state, action)
+        return next_state, reward
 
     def get_reward(self, request, state, action):
         # return reward
@@ -80,8 +82,17 @@ class Agent:
         return 5
 
     def update_qtable(self, old_state, action, reward, next_state):
-        # implement
-        # return qtable
+        max_next_q = 0
+        actions = self.get_all_possible_actions(next_state)
+        for option in actions:
+            if(tuple(next_state) + tuple(option)) not in self.qtable:
+                self.qtable[(tuple(next_state) + tuple(option))] = 0
+            if self.qtable[tuple(next_state) + tuple(option)] > max_next_q:
+                max_next_q = self.qtable[tuple(next_state) + tuple(option)]
+
+        sample = reward + max_next_q
+        q_value = (1-self.alpha) * self.qtable[tuple(old_state) + tuple(action)] + (self.alpha*sample)
+        self.qtable[tuple(old_state) + tuple(action)] = q_value
 
     # Return the total number of credits in the current state
     def get_num_credits(self, state):
@@ -95,8 +106,9 @@ class Agent:
     def train(self):
         for _ in self.episodes:
             condition = 'In Progress'
+            state = []
+
             while condition == 'In Progress':
-                state = []
                 action = self.get_action(state)
 
                 if action == 'STOP' or self.get_num_credits(state) > 25: # Force the agent to stop after 25 credits
@@ -105,7 +117,7 @@ class Agent:
                 next_state, reward = self.step(state, action)
 
                 old_state = copy.deepcopy(state)
-                self.qtable = self.update_qtable(old_state, action, reward, next_state)
+                self.update_qtable(old_state, action, reward, next_state)
             # Update the epsilon value
             self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
 
