@@ -36,12 +36,11 @@ class Agent:
         all_actions = []
 
         # If the last course selected has required labs/ discussions, force the agent to select one
-        print(type(self.course_list))
         if state and len(state) > 0:
             for course in self.course_list:
                 if course['ClassNumber'] == state[-1] and 'RequiredSections' in course:
-                    for course in self.course_list[state[-1]]['RequiredSections']:
-                        all_actions.append(course['ClassNumber'])
+                    for req_course in course['RequiredSections']:
+                        all_actions.append(req_course['ClassNumber'])
                     return all_actions
 
         # Otherwise, return all courses not already in the schedule
@@ -65,10 +64,16 @@ class Agent:
         else: # Select best action
             best_action = actions[0]
             state_tuple = tuple(state)
-            max_qvalue = self.qtable[state_tuple + tuple(best_action)]
+            if tuple(sorted(state_tuple + (best_action,))) not in self.qtable: #init if not in table
+                self.qtable[tuple(sorted(state_tuple + (best_action,)))] = 0
+
+            max_qvalue = self.qtable[tuple(sorted(state_tuple + (best_action,)))]
 
             for action in actions:
-                qvalue = self.qtable[state_tuple + tuple(action)]
+                if tuple(sorted(state_tuple + (action,))) not in self.qtable: #init if not in table
+                    self.qtable[tuple(sorted(state_tuple + (action,)))] = 0
+
+                qvalue = self.qtable[tuple(sorted(state_tuple + (action,)))]
                 if qvalue > max_qvalue:
                     max_qvalue = qvalue
                     best_action = action
@@ -90,17 +95,19 @@ class Agent:
         actions = self.get_all_possible_actions(next_state)
         for option in actions:
             if(tuple(next_state) + tuple(option)) not in self.qtable:
-                self.qtable[(tuple(next_state) + tuple(option))] = 0
-            if self.qtable[tuple(next_state) + tuple(option)] > max_next_q:
-                max_next_q = self.qtable[tuple(next_state) + tuple(option)]
+                self.qtable[tuple(sorted((tuple(next_state) + (option, ))))] = 0
+            if self.qtable[tuple(sorted(tuple(next_state) + (option, )))] > max_next_q:
+                max_next_q = self.qtable[tuple(sorted(tuple(next_state) + (option, )))]
 
         sample = reward + max_next_q
-        q_value = (1-self.alpha) * self.qtable[tuple(old_state) + tuple(action)] + (self.alpha*sample)
-        self.qtable[tuple(old_state) + tuple(action)] = q_value
+        if tuple(sorted(tuple(old_state) + (action,))) not in self.qtable:
+            self.qtable[tuple(sorted(tuple(old_state) + (action,)))] = 0
+
+        q_value = (1-self.alpha) * self.qtable[tuple(sorted(tuple(old_state) + (action,)))] + (self.alpha*sample)
+        self.qtable[tuple(sorted(tuple(old_state) + (action, )))] = q_value
 
     # Return the total number of credits in the current state
     def get_num_credits(self, state):
-        #implement
         num_credits = 0
         for course in state:
             num_credits += int(course['Units'])
@@ -121,15 +128,18 @@ class Agent:
                 next_state, reward = self.step(state, action)
 
                 old_state = copy.deepcopy(state)
-                print("hi", next_state)
+                # print("hi", next_state)
                 self.update_qtable(old_state, action, reward, next_state)
             # Update the epsilon value
             self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
 
         # Write the qtable to a file
-        with open("","wb") as f:
+        with open("qtable.pkl","wb") as f:
             pickle.dump(self.qtable, f)
         print("Training complete! Q-table saved")
+
+        for q in self.qtable:
+            print(q, self.qtable[q])
         return self.qtable
 
     # def find_best_schedule(self):
