@@ -23,8 +23,9 @@ def main():
     min_epsilon = .01
     epsilon_decay = .99
     gamma = .95
+    alpha = 0.2
 
-    agent = Agent(course_list, episodes, request, epsilon, epsilon_decay, min_epsilon, gamma)
+    agent = Agent(course_list, episodes, request, epsilon, epsilon_decay, min_epsilon, gamma, alpha)
     agent.init_qtable()
     agent.train()
 
