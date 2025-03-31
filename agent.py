@@ -5,7 +5,7 @@ import re
 import random
 
 class Agent:
-    def __init__(self, course_list, episodes, request, epsilon, epsilon_decay, min_epsilon, gamma):
+    def __init__(self, course_list, episodes, request, epsilon, epsilon_decay, min_epsilon, gamma, alpha):
         self.course_list = course_list
         self.episodes = episodes
         self.qtable = {}
@@ -14,6 +14,7 @@ class Agent:
         self.epsilon_decay = epsilon_decay
         self.min_epsilon = min_epsilon
         self.gamma = gamma
+        self.alpha = alpha
 
     def are_times_overlapping(times1, times2):
         for t1 in times1:
@@ -35,10 +36,13 @@ class Agent:
         all_actions = []
 
         # If the last course selected has required labs/ discussions, force the agent to select one
-        if state[-1]['RequiredSections'] :
-            for course in state[-1]['RequiredSections']:
-                all_actions.append(course['ClassNumber'])
-            return all_actions
+        print(type(self.course_list))
+        if state and len(state) > 0:
+            for course in self.course_list:
+                if course['ClassNumber'] == state[-1] and 'RequiredSections' in course:
+                    for course in self.course_list[state[-1]]['RequiredSections']:
+                        all_actions.append(course['ClassNumber'])
+                    return all_actions
 
         # Otherwise, return all courses not already in the schedule
         for course in self.course_list:
@@ -72,7 +76,7 @@ class Agent:
 
     def step(self, state, action):
         # return next_state, reward
-        next_state = state.append(action)
+        next_state = state + [action]
         reward = self.get_reward(self.request, state, action)
         return next_state, reward
 
@@ -104,7 +108,7 @@ class Agent:
 
     # Training function based off of HW4 RL
     def train(self):
-        for _ in self.episodes:
+        for _ in range(self.episodes):
             condition = 'In Progress'
             state = []
 
@@ -117,6 +121,7 @@ class Agent:
                 next_state, reward = self.step(state, action)
 
                 old_state = copy.deepcopy(state)
+                print("hi", next_state)
                 self.update_qtable(old_state, action, reward, next_state)
             # Update the epsilon value
             self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
@@ -127,7 +132,7 @@ class Agent:
         print("Training complete! Q-table saved")
         return self.qtable
 
-    def find_best_schedule(self):
+    # def find_best_schedule(self):
         # use the qtable found during training to output the best schedule
 
 
