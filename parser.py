@@ -90,10 +90,8 @@ class Parser:
         new_list = copy.deepcopy(course_list)
         for course in course_list:
             if course['Type'] == "IND":
-                print("remove")
                 new_list.remove(course)
             elif course['Days'] == "TBA":
                 new_list.remove(course)
-                print("remove")
 
         return new_list
