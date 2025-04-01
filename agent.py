@@ -51,29 +51,27 @@ class Agent:
         all_actions.append('STOP')
         return all_actions
 
-    def get_action(self, state):
+    def get_action(self, state, chooseBestAction):
         # using epilson greedy, pick the current best or random action
         true_epsilon = max(self.min_epsilon, self.epsilon)
-        random_decimal = random.random()
         actions = self.get_all_possible_actions(state)
 
-        if (random_decimal < true_epsilon):
-            # Select random action
-            random_action = random.choice(actions)
-            return random_action
+        # Select random action
+        if random.random() < true_epsilon and not chooseBestAction:
+            return random.choice(actions)
         else: # Select best action
             best_action = actions[0]
-            state_tuple = tuple(state)
-            if tuple(sorted(state_tuple + (best_action,))) not in self.qtable: #init if not in table
-                self.qtable[tuple(sorted(state_tuple + (best_action,)))] = 0
-
-            max_qvalue = self.qtable[tuple(sorted(state_tuple + (best_action,)))]
+            state_key = tuple(state)
 
             for action in actions:
-                if tuple(sorted(state_tuple + (action,))) not in self.qtable: #init if not in table
-                    self.qtable[tuple(sorted(state_tuple + (action,)))] = 0
+                if (state_key + (action,)) not in self.qtable: #init if not in table
+                    self.qtable[state_key + (action,)] = 0
 
-                qvalue = self.qtable[tuple(sorted(state_tuple + (action,)))]
+            max_qvalue = -100000
+            best_action = action[0]
+
+            for action in actions:
+                qvalue = self.qtable[state_key + (action,)]
                 if qvalue > max_qvalue:
                     max_qvalue = qvalue
                     best_action = action
@@ -90,11 +88,19 @@ class Agent:
         # placeholder
         reward = 0
         for desired_course in request['DesiredCourses']:
-            for selected_course in state:
+            for selected_course in state + [action]:
                 for course in self.course_list:
                     if course['ClassNumber'] == selected_course:
                         if course['Mnemonic'] == desired_course['Mnemonic'] and course['Number'] == desired_course['Number']:
-                            reward += 5
+                            reward += 10
+
+        for word in request['Keywords']:
+            for class_number in state + [action]:
+                if class_number not in request['DesiredCourses']:
+                    for course in self.course_list:
+                        if course['ClassNumber'] == class_number:
+                            if word in course['Description']:
+                                reward += 5
 
         # if self.get_num_credits(state + [action]) > request['MinCredits'] :
         #     if self.get_num_credits(state + [action]) < request['MaxCredits']:
@@ -107,20 +113,25 @@ class Agent:
         max_next_q = 0
         actions = self.get_all_possible_actions(next_state)
         for option in actions:
-            if(tuple(next_state) + tuple(option)) not in self.qtable:
-                self.qtable[tuple(sorted((tuple(next_state) + (option, ))))] = 0
-            if self.qtable[tuple(sorted(tuple(next_state) + (option, )))] > max_next_q:
-                max_next_q = self.qtable[tuple(sorted(tuple(next_state) + (option, )))]
+            key = tuple(next_state) + (option,)
+            if key not in self.qtable:
+                self.qtable[key] = 0 # Init if missing
+            max_next_q = max(max_next_q, self.qtable[key])
+
+            # if(tuple(next_state) + tuple(option)) not in self.qtable:
+            #     self.qtable[tuple(sorted((tuple(next_state) + (option, ))))] = 0
+            # if self.qtable[tuple(sorted(tuple(next_state) + (option, )))] > max_next_q:
+            #     max_next_q = self.qtable[tuple(sorted(tuple(next_state) + (option, )))]
 
         sample = reward + max_next_q
-
-        if tuple(sorted(tuple(old_state) + (action,))) not in self.qtable:
-            self.qtable[tuple(sorted(tuple(old_state) + (action,)))] = 0
+        old_key = tuple(old_state) + (action,)
+        if old_key not in self.qtable:
+            self.qtable[old_key] = 0
 
         # print(sample, reward, max_next_q, self.qtable[tuple(sorted(tuple(old_state) + (action,)))])
 
-        q_value = (1-self.alpha) * self.qtable[tuple(sorted(tuple(old_state) + (action,)))] + (self.alpha*sample)
-        self.qtable[tuple(sorted(tuple(old_state) + (action, )))] = q_value
+        q_value = (1-self.alpha) * self.qtable[old_key] + (self.alpha*sample)
+        self.qtable[old_key] = q_value
         # print("update ", q_value, tuple(sorted(tuple(old_state) + (action, ))))
 
     # Return the total number of credits in the current state
@@ -142,10 +153,10 @@ class Agent:
             state = []
             # print("New episode")
             while condition == 'In Progress':
-                action = self.get_action(state)
+                action = self.get_action(state, False)
                 # print("a", action)
 
-                if action == 'STOP' or self.get_num_credits(state) > 15: # Force the agent to stop after 25 credits
+                if action == 'STOP' or self.get_num_credits(state) > 6: # Force the agent to stop after 25 credits
                     condition = 'Done'
 
                 next_state, reward = self.step(state, action)
@@ -153,21 +164,36 @@ class Agent:
                 state = next_state
                 self.update_qtable(old_state, action, reward, next_state)
             # Update the epsilon value
-            print(state, self.get_reward(self.request, state, 'STOP'))
             self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
+
+            # print(state, self.get_reward(self.request, state, ''), self.epsilon)
 
         # Write the qtable to a file
         with open("qtable.pkl","wb") as f:
             pickle.dump(self.qtable, f)
         print("Training complete, qtable saved")
 
-        # for q in self.qtable:
-        #     if self.qtable[q] != 0 and self.qtable[q] != 1:
-        #         print(q, self.qtable[q])
+        for q in self.qtable:
+            if self.qtable[q] != 0 and self.qtable[q] != 1:
+                print(q, self.qtable[q])
         return self.qtable
 
-    # def find_best_schedule(self):
+    def find_best_schedule(self):
         # use the qtable found during training to output the best schedule
+        condition = 'In Progress'
+        state = []
+        print("Finding Best Schedule")
+        while condition == 'In Progress':
+            actions = self.get_all_possible_actions(state)
+            action = self.get_action(state, True)
+            if action == 'STOP' or self.get_num_credits(state) > 6: # Force the agent to stop after 25 credits
+                condition = 'Done'
+            next_state, reward = self.step(state, action)
+            old_state = copy.deepcopy(state)
+            state = next_state
+        print(state, self.get_reward(self.request, state, ""))
+
+
 
 
 
