@@ -63,7 +63,6 @@ class Parser:
     def parse_times(self, course_list):
         for key in course_list:
             course = course_list[key]
-            # print(course['Days'])
             parts = course['Days'].split(' ')
             if len(parts) < 4:
                 return

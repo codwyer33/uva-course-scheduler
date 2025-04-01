@@ -5,7 +5,7 @@ def main():
     episodes = 1000
 
     parser = Parser()
-    course_dict = parser.parse_csv_into_dict('allCourses.csv')
+    course_dict = parser.parse_csv_into_dict('classes2.csv')
     course_dict = parser.remove_extra_courses(course_dict)
     parser.parse_times(course_dict)
     course_dict = parser.consolidate_lectures_and_discussions(course_dict)

@@ -63,8 +63,6 @@ class Agent:
             if not is_duplicate_or_overlaps and self.course_list[k2]['Type'] == 'Lecture':
                 filtered_actions.append(k2)
 
-        # print("all actions", filtered_actions)
-
         filtered_actions.append('STOP')
         return filtered_actions
 
@@ -126,8 +124,19 @@ class Agent:
             reward += 5
         if self.get_num_credits(state + [action]) > request['MaxCredits']:
             reward -= 100
-
         return reward
+
+        # for s in state:
+        #     for z in state:
+        #         if self.are_keys_the_same_course(s, z):
+        #             reward -= 100
+
+        # if self.get_num_credits(state + [action]) > request['MinCredits'] :
+        #     if self.get_num_credits(state + [action]) < request['MaxCredits']:
+        #         reward += 5
+        #     else:
+        #         reward -= 10
+
 
     def update_qtable(self, old_state, action, reward, next_state):
         max_next_q = 0
@@ -164,6 +173,7 @@ class Agent:
                 num_credits += 1
             else:
                 num_credits += float((self.course_list[class_number]['Units']))
+
         return num_credits
 
     # Training function based off of HW4 RL
@@ -187,11 +197,6 @@ class Agent:
             self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
 
             # print(state, self.get_reward(self.request, state, ''), self.epsilon)
-
-        # Write the qtable to a file
-        with open("qtable.pkl","wb") as f:
-            pickle.dump(self.qtable, f)
-        print("Training complete, qtable saved")
 
         # for q in self.qtable:
         #     if self.qtable[q] != 0 and self.qtable[q] != 1:
