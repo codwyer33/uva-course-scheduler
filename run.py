@@ -2,7 +2,7 @@ from agent import *
 from parser import *
 
 def main():
-    episodes = 100
+    episodes = 10000
 
     parser = Parser()
     course_list = parser.parse_csv_into_dict('classes.csv')
