@@ -38,19 +38,23 @@ class Parser:
             else:
                 multi_section_courses[key] = []
 
+        # print("M", multi_section_courses)
+
         # We are assuming that for courses that have lecture and something else, both are required
         # Store non-lecture courses in the multi_section_courses dictionary
         for key in course_list:
             course = course_list[key]
             if (course['Mnemonic'], course['Number']) in multi_section_courses:
                 if course['Type'] != 'Lecture':
-                    multi_section_courses[(course['Mnemonic'], course['Number'])].append(course)
-                    course_list.remove(course)
+                    multi_section_courses[(course['Mnemonic'], course['Number'])].append(key)
+                    # print("update m", multi_section_courses)
 
-        for course in course_list:
+        for key in course_list:
             course = course_list[key]
-            if (course['Mnemonic'], course['Number']) in multi_section_courses:
+            if (course['Mnemonic'], course['Number']) in multi_section_courses and course['Type'] == 'Lecture':
                 course['RequiredSections'] = multi_section_courses[(course['Mnemonic'], course['Number'])]
+                # print()
+                # print("making required sections", course_list[key])
 
         return course_list
 
@@ -59,6 +63,7 @@ class Parser:
     def parse_times(self, course_list):
         for key in course_list:
             course = course_list[key]
+            # print(course['Days'])
             parts = course['Days'].split(' ')
             if len(parts) < 4:
                 return
@@ -95,8 +100,9 @@ class Parser:
         new_list = copy.deepcopy(course_list)
         for course in course_list:
             if course_list[course]['Type'] == "IND":
-                new_list.remove(course)
+                del new_list[course]
             elif course_list[course]['Days'] == "TBA":
-                new_list.remove(course)
-
+                del new_list[course]
+            elif "no mtgs" in course_list[course]['Days']:
+                del new_list[course]
         return new_list

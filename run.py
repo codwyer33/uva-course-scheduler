@@ -2,19 +2,19 @@ from agent import *
 from parser import *
 
 def main():
-    episodes = 100
+    episodes = 1000
 
     parser = Parser()
-    course_dict = parser.parse_csv_into_dict('classes2.csv')
+    course_dict = parser.parse_csv_into_dict('allCourses.csv')
     course_dict = parser.remove_extra_courses(course_dict)
     parser.parse_times(course_dict)
     course_dict = parser.consolidate_lectures_and_discussions(course_dict)
 
-    # for course in course_list:
-    #     print(course)
+    # for course in course_dict:
+    #     print(course_dict[course])
 
-    request = {'DesiredCourses': [{'Mnemonic': 'CS', 'Number': '3710'}, {'Mnemonic': 'CS', 'Number': '4444'},
-                                  ],
+    request = {'DesiredCourses': [ {'Mnemonic': 'CS', 'Number': '2100'},
+                                    {'Mnemonic': 'CS', 'Number': '3710'}],
                'MaxCredits': 19,
                'MinCredits': 14,
                'Keywords': ['human', 'database', 'design', 'system']

@@ -27,23 +27,31 @@ class Agent:
     # The qtable is a dictionary with keys that are tuples containing ClassNumbers
     def init_qtable(self):
         for course in self.course_list:
-            self.qtable[course] = 0.0
+            if course in self.request['DesiredCourses']:
+                self.qtable[course] = 10
+            else:
+                self.qtable[course] = 0.0
 
     # Provide a list of all possible actions
     def get_all_possible_actions(self, state):
         all_actions = []
 
         # If the last course selected has required labs/ discussions, force the agent to select one
-        if state and len(state) > 0:
-            for course in self.course_list:
-                if course == state[-1] and 'RequiredSections' in self.course_list[course]:
-                    for req_course in self.course_list['RequiredSections']:
-                        all_actions.append(req_course['ClassNumber'])
-                    return all_actions
+        if state and len(state) > 0 and state[-1] != 'STOP':
+            # print(state, self.course_list[state[-1]])
+            if 'RequiredSections' in self.course_list[state[-1]]:
+                # print("reaching a course with required sections")
+                all_actions = self.course_list[state[-1]]['RequiredSections']
+                return all_actions
 
-        # Otherwise, return all courses that are not duplicates
+            #
+            # if course == state[-1] and 'RequiredSections' in self.course_list[course]:
+            #         all_actions = self.course_list['RequiredSections']
+            #         return all_actions
+
+        # Otherwise, return all courses that are not duplicates, don't overlap, and not labs/discussions
         filtered_actions = []
-        for k2 in self.course_list: # Restrict agent from choosing 2 courses that are the same
+        for k2 in self.course_list: # Restrict agent from choosing 2 courses that are duplicates
             is_duplicate_or_overlaps = False
             for k1 in state:
                 if self.are_keys_the_same_course(k1, k2):
@@ -52,11 +60,10 @@ class Agent:
                 elif k1 != 'STOP' and self.are_times_overlapping(self.course_list[k1]['Times'], self.course_list[k2]['Times']): # Eliminate overlapping times
                     is_duplicate_or_overlaps = True
                     break
-            if not is_duplicate_or_overlaps:
+            if not is_duplicate_or_overlaps and self.course_list[k2]['Type'] == 'Lecture':
                 filtered_actions.append(k2)
 
-        print("all actions", filtered_actions)
-
+        # print("all actions", filtered_actions)
 
         filtered_actions.append('STOP')
         return filtered_actions
@@ -113,18 +120,13 @@ class Agent:
             for class_number in state + [action]:
                 if class_number in self.course_list:
                     if word in self.course_list[class_number]['Description']:
-                            reward += 5
+                            reward += 1
 
-        # for s in state:
-        #     for z in state:
-        #         if self.are_keys_the_same_course(s, z):
-        #             reward -= 100
+        if self.get_num_credits(state + [action]) > request['MinCredits'] :
+            reward += 5
+        if self.get_num_credits(state + [action]) > request['MaxCredits']:
+            reward -= 100
 
-        # if self.get_num_credits(state + [action]) > request['MinCredits'] :
-        #     if self.get_num_credits(state + [action]) < request['MaxCredits']:
-        #         reward += 5
-        #     else:
-        #         reward -= 10
         return reward
 
     def update_qtable(self, old_state, action, reward, next_state):
@@ -156,10 +158,12 @@ class Agent:
     def get_num_credits(self, state):
         num_credits = 0
         for class_number in state:
+            if class_number not in self.course_list:
+                continue
             if "-" in self.course_list[class_number]['Units']: # simplifies dealing with courses that have a range of units, ie "1-3"
                 num_credits += 1
             else:
-                num_credits += int(self.course_list[class_number]['Units'])
+                num_credits += float((self.course_list[class_number]['Units']))
         return num_credits
 
     # Training function based off of HW4 RL
@@ -167,12 +171,12 @@ class Agent:
         for _ in range(self.episodes):
             condition = 'In Progress'
             state = []
-            # print("New episode")
+            print("Episode", _)
             while condition == 'In Progress':
                 action = self.get_action(state, False)
                 # print("a", action)
 
-                if 'STOP' in state or self.get_num_credits(state) > 6: # Force the agent to stop after 25 credits
+                if 'STOP' in state or self.get_num_credits(state) > 15: # Force the agent to stop after 25 credits
                     condition = 'Done'
 
                 next_state, reward = self.step(state, action)
@@ -204,12 +208,12 @@ class Agent:
             # print(state)
             # print(actions)
             action = self.get_action(state, True)
-            if action == 'STOP' or self.get_num_credits(state) > 6: # Force the agent to stop after 25 credits
+            if action == 'STOP' or self.get_num_credits(state) > 15: # Force the agent to stop after 25 credits
                 condition = 'Done'
             next_state, reward = self.step(state, action)
             old_state = copy.deepcopy(state)
             state = next_state
-        print(state, self.get_reward(self.request, state, ""))
+        print("Best Schedule - Reward:", self.get_reward(self.request, state, ""), "Credits:",self.get_num_credits(state))
         for s in state:
             if s != 'STOP':
                 course = self.course_list[s]
