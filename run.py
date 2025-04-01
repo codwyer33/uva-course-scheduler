@@ -2,7 +2,7 @@ from agent import *
 from parser import *
 
 def main():
-    episodes = 10000
+    episodes = 100
 
     parser = Parser()
     course_dict = parser.parse_csv_into_dict('classes2.csv')
@@ -13,7 +13,7 @@ def main():
     # for course in course_list:
     #     print(course)
 
-    request = {'DesiredCourses': [{'Mnemonic': 'CS', 'Number': '3250'}, {'Mnemonic': 'CS', 'Number': '4710'},
+    request = {'DesiredCourses': [{'Mnemonic': 'CS', 'Number': '3710'}, {'Mnemonic': 'CS', 'Number': '4444'},
                                   ],
                'MaxCredits': 19,
                'MinCredits': 14,
