@@ -10,9 +10,10 @@ class Parser:
     def parse_csv_into_dict(self, csv_file_path):
         with open(csv_file_path, mode='r') as file:
             csv_reader = csv.DictReader(file)
-            course_dict = []
+            course_dict = {}
             for row in csv_reader:
-                course_dict.append(row)
+                this_course_dict = row
+                course_dict[this_course_dict['ClassNumber']] = row
         return course_dict
 
     # Stores labs/discussions associated with a lecture under their parent lecture using key 'RequiredSections'
@@ -21,7 +22,8 @@ class Parser:
         multi_section_courses = {}
 
         # Find the types of all courses
-        for course in course_list:
+        for key in course_list:
+            course = course_list[key]
             if (course['Mnemonic'], course['Number']) not in multi_section_courses: # initialize this course code entry
                 multi_section_courses[(course['Mnemonic'], course['Number'])] = [course['Type']]
             elif course['Type'] not in multi_section_courses[(course['Mnemonic'], course['Number'])]:
@@ -38,13 +40,15 @@ class Parser:
 
         # We are assuming that for courses that have lecture and something else, both are required
         # Store non-lecture courses in the multi_section_courses dictionary
-        for course in course_list:
+        for key in course_list:
+            course = course_list[key]
             if (course['Mnemonic'], course['Number']) in multi_section_courses:
                 if course['Type'] != 'Lecture':
                     multi_section_courses[(course['Mnemonic'], course['Number'])].append(course)
                     course_list.remove(course)
 
         for course in course_list:
+            course = course_list[key]
             if (course['Mnemonic'], course['Number']) in multi_section_courses:
                 course['RequiredSections'] = multi_section_courses[(course['Mnemonic'], course['Number'])]
 
@@ -53,7 +57,8 @@ class Parser:
     # Stores a list of dictionaries under the 'Times' key, with StartTime and EndTime as minutes since 12am
     # Example: Mo 2:00pm - 3:15pm becomes [{'Day': 'Mo', 'StartTime': 840, 'EndTime': 915}] for
     def parse_times(self, course_list):
-        for course in course_list:
+        for key in course_list:
+            course = course_list[key]
             parts = course['Days'].split(' ')
             if len(parts) < 4:
                 return
@@ -89,9 +94,9 @@ class Parser:
         # Remove independent studies and courses with no time for now
         new_list = copy.deepcopy(course_list)
         for course in course_list:
-            if course['Type'] == "IND":
+            if course_list[course]['Type'] == "IND":
                 new_list.remove(course)
-            elif course['Days'] == "TBA":
+            elif course_list[course]['Days'] == "TBA":
                 new_list.remove(course)
 
         return new_list
