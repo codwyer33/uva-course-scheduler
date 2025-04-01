@@ -5,10 +5,10 @@ def main():
     episodes = 10000
 
     parser = Parser()
-    course_list = parser.parse_csv_into_dict('classes2.csv')
-    course_list = parser.remove_extra_courses(course_list)
-    parser.parse_times(course_list)
-    course_list = parser.consolidate_lectures_and_discussions(course_list)
+    course_dict = parser.parse_csv_into_dict('classes2.csv')
+    course_dict = parser.remove_extra_courses(course_dict)
+    parser.parse_times(course_dict)
+    course_dict = parser.consolidate_lectures_and_discussions(course_dict)
 
     # for course in course_list:
     #     print(course)
@@ -26,7 +26,7 @@ def main():
     gamma = .95
     alpha = .9
 
-    agent = Agent(course_list, episodes, request, epsilon, epsilon_decay, min_epsilon, gamma, alpha)
+    agent = Agent(course_dict, episodes, request, epsilon, epsilon_decay, min_epsilon, gamma, alpha)
     agent.init_qtable()
     agent.train()
     agent.find_best_schedule()

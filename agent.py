@@ -29,7 +29,7 @@ class Agent:
     # The qtable is a dictionary with keys that are tuples containing ClassNumbers
     def init_qtable(self):
         for course in self.course_list:
-            self.qtable[ (course['ClassNumber']) ] = 0.0
+            self.qtable[course] = 0.0
 
     # Provide a list of all possible actions
     def get_all_possible_actions(self, state):
@@ -38,15 +38,15 @@ class Agent:
         # If the last course selected has required labs/ discussions, force the agent to select one
         if state and len(state) > 0:
             for course in self.course_list:
-                if course['ClassNumber'] == state[-1] and 'RequiredSections' in course:
-                    for req_course in course['RequiredSections']:
+                if course == state[-1] and 'RequiredSections' in self.course_list[course]:
+                    for req_course in self.course_list['RequiredSections']:
                         all_actions.append(req_course['ClassNumber'])
                     return all_actions
 
         # Otherwise, return all courses not already in the schedule
         for course in self.course_list:
-            if course['ClassNumber'] not in state:
-                all_actions.append(course['ClassNumber'])
+            if course not in state:
+                all_actions.append(course)
 
         all_actions.append('STOP')
         return all_actions
@@ -85,22 +85,18 @@ class Agent:
 
     def get_reward(self, request, state, action):
         # return reward
-        # placeholder
         reward = 0
         for desired_course in request['DesiredCourses']:
             for selected_course in state + [action]:
-                for course in self.course_list:
-                    if course['ClassNumber'] == selected_course:
-                        if course['Mnemonic'] == desired_course['Mnemonic'] and course['Number'] == desired_course['Number']:
-                            reward += 10
+                if selected_course in self.course_list:
+                    if self.course_list[selected_course]['Mnemonic'] == desired_course['Mnemonic'] and self.course_list[selected_course]['Number'] == desired_course['Number']:
+                        reward += 10
 
         for word in request['Keywords']:
             for class_number in state + [action]:
-                if class_number not in request['DesiredCourses']:
-                    for course in self.course_list:
-                        if course['ClassNumber'] == class_number:
-                            if word in course['Description']:
-                                reward += 5
+                if class_number in self.course_list:
+                    if word in self.course_list[class_number]['Description']:
+                            reward += 5
 
         # if self.get_num_credits(state + [action]) > request['MinCredits'] :
         #     if self.get_num_credits(state + [action]) < request['MaxCredits']:
@@ -138,12 +134,10 @@ class Agent:
     def get_num_credits(self, state):
         num_credits = 0
         for class_number in state:
-            for course in self.course_list:
-                if course['ClassNumber'] == class_number:
-                    if "-" in course['Units']: # simplifies dealing with courses that have a range of units, ie "1-3"
-                        num_credits += 1
-                    else:
-                        num_credits += int(course['Units'])
+            if "-" in self.course_list[class_number]['Units']: # simplifies dealing with courses that have a range of units, ie "1-3"
+                num_credits += 1
+            else:
+                num_credits += int(self.course_list[class_number]['Units'])
         return num_credits
 
     # Training function based off of HW4 RL
@@ -192,6 +186,9 @@ class Agent:
             old_state = copy.deepcopy(state)
             state = next_state
         print(state, self.get_reward(self.request, state, ""))
+        for s in state:
+            course = self.course_list[s]
+            print(course['Mnemonic'], course['Number'], course['Title'])
 
 
 
