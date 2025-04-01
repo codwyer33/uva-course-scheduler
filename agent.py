@@ -16,15 +16,13 @@ class Agent:
         self.gamma = gamma
         self.alpha = alpha
 
-    def are_times_overlapping(times1, times2):
+    def are_times_overlapping(self, times1, times2):
         for t1 in times1:
             for t2 in times2:
-                if t1['Day'] == t2['Day']:
-                    if t1['StartTime'] > t2['StartTime'] and t1['EndTime'] < t2['EndTime']:
-                        return False
-                    if t2['StartTime'] > t1['StartTime'] and t2['EndTime'] < t1['EndTime']:
-                        return False
-        return True
+                if t1['Day'] == t2['Day']:  # Check same day
+                    if not (t1['EndTime'] <= t2['StartTime'] or t2['EndTime'] <= t1['StartTime']):
+                        return True
+        return False
 
     # The qtable is a dictionary with keys that are tuples containing ClassNumbers
     def init_qtable(self):
@@ -43,13 +41,25 @@ class Agent:
                         all_actions.append(req_course['ClassNumber'])
                     return all_actions
 
-        # Otherwise, return all courses not already in the schedule
-        for course in self.course_list:
-            if course not in state:
-                all_actions.append(course)
+        # Otherwise, return all courses that are not duplicates
+        filtered_actions = []
+        for k2 in self.course_list: # Restrict agent from choosing 2 courses that are the same
+            is_duplicate_or_overlaps = False
+            for k1 in state:
+                if self.are_keys_the_same_course(k1, k2):
+                    is_duplicate_or_overlaps = True
+                    break
+                elif k1 != 'STOP' and self.are_times_overlapping(self.course_list[k1]['Times'], self.course_list[k2]['Times']): # Eliminate overlapping times
+                    is_duplicate_or_overlaps = True
+                    break
+            if not is_duplicate_or_overlaps:
+                filtered_actions.append(k2)
 
-        all_actions.append('STOP')
-        return all_actions
+        print("all actions", filtered_actions)
+
+
+        filtered_actions.append('STOP')
+        return filtered_actions
 
     def get_action(self, state, chooseBestAction):
         # using epilson greedy, pick the current best or random action
@@ -83,6 +93,13 @@ class Agent:
         reward = self.get_reward(self.request, state, action)
         return next_state, reward
 
+    def are_keys_the_same_course(self, k1, k2):
+        if k1 == 'STOP' or k2 == 'STOP':
+            return False
+        if self.course_list[k1]['Mnemonic'] == self.course_list[k2]['Mnemonic'] and self.course_list[k1]['Number'] == self.course_list[k2]['Number'] :
+            return True
+        return False
+
     def get_reward(self, request, state, action):
         # return reward
         reward = 0
@@ -97,6 +114,11 @@ class Agent:
                 if class_number in self.course_list:
                     if word in self.course_list[class_number]['Description']:
                             reward += 5
+
+        # for s in state:
+        #     for z in state:
+        #         if self.are_keys_the_same_course(s, z):
+        #             reward -= 100
 
         # if self.get_num_credits(state + [action]) > request['MinCredits'] :
         #     if self.get_num_credits(state + [action]) < request['MaxCredits']:
@@ -150,7 +172,7 @@ class Agent:
                 action = self.get_action(state, False)
                 # print("a", action)
 
-                if action == 'STOP' or self.get_num_credits(state) > 6: # Force the agent to stop after 25 credits
+                if 'STOP' in state or self.get_num_credits(state) > 6: # Force the agent to stop after 25 credits
                     condition = 'Done'
 
                 next_state, reward = self.step(state, action)
@@ -167,9 +189,9 @@ class Agent:
             pickle.dump(self.qtable, f)
         print("Training complete, qtable saved")
 
-        for q in self.qtable:
-            if self.qtable[q] != 0 and self.qtable[q] != 1:
-                print(q, self.qtable[q])
+        # for q in self.qtable:
+        #     if self.qtable[q] != 0 and self.qtable[q] != 1:
+        #         print(q, self.qtable[q])
         return self.qtable
 
     def find_best_schedule(self):
@@ -179,6 +201,8 @@ class Agent:
         print("Finding Best Schedule")
         while condition == 'In Progress':
             actions = self.get_all_possible_actions(state)
+            # print(state)
+            # print(actions)
             action = self.get_action(state, True)
             if action == 'STOP' or self.get_num_credits(state) > 6: # Force the agent to stop after 25 credits
                 condition = 'Done'
@@ -187,10 +211,9 @@ class Agent:
             state = next_state
         print(state, self.get_reward(self.request, state, ""))
         for s in state:
-            course = self.course_list[s]
-            print(course['Mnemonic'], course['Number'], course['Title'])
-
-
+            if s != 'STOP':
+                course = self.course_list[s]
+                print(course['Mnemonic'], course['Number'], course['Title'], course['Days'])
 
 
 
