@@ -119,6 +119,7 @@ class Agent:
                 if class_number in self.course_list:
                     if word in self.course_list[class_number]['Description']:
                             reward += 1
+        
 
         if self.get_num_credits(state + [action]) > request['MinCredits'] :
             reward += 5
