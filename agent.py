@@ -74,7 +74,6 @@ class Agent:
             actions = actionsList
         else:
             actions = self.get_all_possible_actions(state)
-
         # Select random action
         if random.random() < true_epsilon and not chooseBestAction:
             # if random.random() < .05: #Force a higher likelihood of choosing stop
