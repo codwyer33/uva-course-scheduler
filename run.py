@@ -19,6 +19,8 @@ def main():
                'MinCredits': 14,
                'Keywords': ['human', 'database', 'design', 'system'],
                'NumberOfSchedules': 3
+               'PreferredTimes' : ['Morning', 'Afternoon'],
+               'LunchBreak': True
                }
 
     epsilon = 1.0
