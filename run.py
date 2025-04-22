@@ -18,6 +18,7 @@ def main():
                'MaxCredits': 19,
                'MinCredits': 14,
                'Keywords': ['human', 'database', 'design', 'system'],
+               'NumberOfSchedules': 3
                'PreferredTimes' : ['Morning', 'Afternoon'],
                'LunchBreak': True
                }
@@ -31,7 +32,7 @@ def main():
     agent = Agent(course_dict, episodes, request, epsilon, epsilon_decay, min_epsilon, gamma, alpha)
     agent.init_qtable()
     agent.train()
-    agent.find_best_schedule()
+    agent.find_best_schedule(request['NumberOfSchedules'])
 
     # for q in agent.qtable:
     #     print(q, agent.qtable[q])
