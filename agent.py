@@ -213,18 +213,17 @@ class Agent:
         print("Finding Best Schedule(s)")
         restricted_states = []
 
+        # Repeatedly find a good schedule
         for i in range(number_of_schedules):
             condition = 'In Progress'
             state = []
             while condition == 'In Progress':
                 actions = self.get_all_possible_actions(state)
                 allowed_actions = set(actions) - set(restricted_states)
-                # print(actions)
-                # print(state)
-                # print("allowed:")
-                # print(actions, restricted_states, allowed_actions)
+
                 action = self.get_action(state, True, list(allowed_actions))
 
+                # To generate unique schedules, prevent a course from being chosen again unless it was user-requested
                 if action != 'STOP':
                     isCourseDesired = False
                     for k in self.request['DesiredCourses']:
@@ -234,7 +233,7 @@ class Agent:
                     if not isCourseDesired:
                         restricted_states.append(action)
 
-                if action == 'STOP' or self.get_num_credits(state) > 15: # Force the agent to stop after 25 credits
+                if action == 'STOP' or self.get_num_credits(state) > 25: # Force the agent to stop after 25 credits
                     condition = 'Done'
                 next_state, reward = self.step(state, action)
                 old_state = copy.deepcopy(state)
