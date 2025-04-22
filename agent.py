@@ -66,10 +66,14 @@ class Agent:
         filtered_actions.append('STOP')
         return filtered_actions
 
-    def get_action(self, state, chooseBestAction):
+    def get_action(self, state, chooseBestAction, actionsList):
         # using epilson greedy, pick the current best or random action
         true_epsilon = max(self.min_epsilon, self.epsilon)
-        actions = self.get_all_possible_actions(state)
+
+        if actionsList != "":
+            actions = actionsList
+        else:
+            actions = self.get_all_possible_actions(state)
 
         # Select random action
         if random.random() < true_epsilon and not chooseBestAction:
@@ -184,7 +188,7 @@ class Agent:
             state = []
             print("Episode", _)
             while condition == 'In Progress':
-                action = self.get_action(state, False)
+                action = self.get_action(state, False, "")
                 # print("a", action)
 
                 if 'STOP' in state or self.get_num_credits(state) > 15: # Force the agent to stop after 25 credits
@@ -204,26 +208,43 @@ class Agent:
         #         print(q, self.qtable[q])
         return self.qtable
 
-    def find_best_schedule(self):
+    def find_best_schedule(self, number_of_schedules):
         # use the qtable found during training to output the best schedule
-        condition = 'In Progress'
-        state = []
-        print("Finding Best Schedule")
-        while condition == 'In Progress':
-            actions = self.get_all_possible_actions(state)
-            # print(state)
-            # print(actions)
-            action = self.get_action(state, True)
-            if action == 'STOP' or self.get_num_credits(state) > 15: # Force the agent to stop after 25 credits
-                condition = 'Done'
-            next_state, reward = self.step(state, action)
-            old_state = copy.deepcopy(state)
-            state = next_state
-        print("Best Schedule - Reward:", self.get_reward(self.request, state, ""), "Credits:",self.get_num_credits(state))
-        for s in state:
-            if s != 'STOP':
-                course = self.course_list[s]
-                print(course['Mnemonic'], course['Number'], course['Title'], course['Days'])
+        print("Finding Best Schedule(s)")
+        restricted_states = []
+
+        for i in range(number_of_schedules):
+            condition = 'In Progress'
+            state = []
+            while condition == 'In Progress':
+                actions = self.get_all_possible_actions(state)
+                allowed_actions = set(actions) - set(restricted_states)
+                # print(actions)
+                # print(state)
+                # print("allowed:")
+                # print(actions, restricted_states, allowed_actions)
+                action = self.get_action(state, True, list(allowed_actions))
+
+                if action != 'STOP':
+                    isCourseDesired = False
+                    for k in self.request['DesiredCourses']:
+                        if self.course_list[action]['Mnemonic'] == k['Mnemonic'] and self.course_list[action]['Number'] == k['Number']:
+                            isCourseDesired = True
+                            continue
+                    if not isCourseDesired:
+                        restricted_states.append(action)
+
+                if action == 'STOP' or self.get_num_credits(state) > 15: # Force the agent to stop after 25 credits
+                    condition = 'Done'
+                next_state, reward = self.step(state, action)
+                old_state = copy.deepcopy(state)
+                state = next_state
+            print()
+            print("Schedule - Reward:", self.get_reward(self.request, state, ""), "Credits:",self.get_num_credits(state))
+            for s in state:
+                if s != 'STOP':
+                    course = self.course_list[s]
+                    print(course['Mnemonic'], course['Number'], course['Title'], course['Days'])
 
 
 
