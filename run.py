@@ -18,7 +18,8 @@ def main():
                'MaxCredits': 19,
                'MinCredits': 14,
                'Keywords': ['human', 'database', 'design', 'system'],
-               'PreferredTimes' : ['Afternoon', 'Evening']
+               'PreferredTimes' : ['Morning', 'Afternoon'],
+               'LunchBreak': True
                }
 
     epsilon = 1.0

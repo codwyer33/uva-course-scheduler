@@ -149,6 +149,16 @@ class Agent:
                         if day['StartTime'] >= 1020:
                             reward += 3
 
+        if request['LunchBreak']:
+            lunch = True
+            for class_number in state + [action]:
+                if class_number in self.course_list:
+                    for day in self.course_list[class_number]['Times']:
+                        if day['StartTime'] <= 840 and day['EndTime'] >= 780:
+                            lunch = False
+            if lunch:
+                reward += 20
+
         return reward
 
         # for s in state:
