@@ -5,7 +5,7 @@ def main():
     episodes = 1000
 
     parser = Parser()
-    course_dict = parser.parse_csv_into_dict('classes.csv')
+    course_dict = parser.parse_csv_into_dict('searchData.csv')
     course_dict = parser.remove_extra_courses(course_dict)
     parser.parse_times(course_dict)
     course_dict = parser.consolidate_lectures_and_discussions(course_dict)
@@ -24,7 +24,7 @@ def main():
 
     epsilon = 1.0
     min_epsilon = .01
-    epsilon_decay = .999
+    epsilon_decay = .99999
     gamma = .95
     alpha = .9
 

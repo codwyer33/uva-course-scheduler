@@ -111,8 +111,10 @@ class Agent:
         for desired_course in request['DesiredCourses']:
             for selected_course in state + [action]:
                 if selected_course in self.course_list:
-                    if self.course_list[selected_course]['Mnemonic'] == desired_course['Mnemonic'] and self.course_list[selected_course]['Number'] == desired_course['Number']:
+                    if self.course_list[selected_course]['Mnemonic'] == desired_course['Mnemonic']:
                         reward += 10
+                    if self.course_list[selected_course]['Mnemonic'] == desired_course['Mnemonic'] and self.course_list[selected_course]['Number'] == desired_course['Number']:
+                        reward += 30
 
         for word in request['Keywords']:
             for class_number in state + [action]:
