@@ -29,7 +29,7 @@ def main():
     # accept path on CLI or prompt otherwise
     path = sys.argv[1] if len(sys.argv) > 1 else input("Transcript PDF path: ").strip()
     if not os.path.isfile(path):
-        print(f"❌ File not found: {path}")
+        print(f"File not found: {path}")
         sys.exit(1)
 
     data = parse_transcript_into_json(path)

@@ -3,6 +3,7 @@ import csv
 import pickle
 import re
 import random
+import matplotlib.pyplot as plt
 
 class Agent:
     def __init__(self, course_list, episodes, request, epsilon, epsilon_decay, min_epsilon, gamma, alpha):
@@ -66,10 +67,14 @@ class Agent:
         filtered_actions.append('STOP')
         return filtered_actions
 
-    def get_action(self, state, chooseBestAction):
+    def get_action(self, state, chooseBestAction, actionsList):
         # using epilson greedy, pick the current best or random action
         true_epsilon = max(self.min_epsilon, self.epsilon)
-        actions = self.get_all_possible_actions(state)
+
+        if actionsList != "":
+            actions = actionsList
+        else:
+            actions = self.get_all_possible_actions(state)
 
         # Select random action
         if random.random() < true_epsilon and not chooseBestAction:
@@ -215,12 +220,13 @@ class Agent:
 
     # Training function based off of HW4 RL
     def train(self):
+        training_progress = []
         for _ in range(self.episodes):
             condition = 'In Progress'
             state = []
             print("Episode", _)
             while condition == 'In Progress':
-                action = self.get_action(state, False)
+                action = self.get_action(state, False, "")
                 # print("a", action)
 
                 if 'STOP' in state or self.get_num_credits(state) > 15: # Force the agent to stop after 25 credits
@@ -232,34 +238,61 @@ class Agent:
                 self.update_qtable(old_state, action, reward, next_state)
             # Update the epsilon value
             self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
+            training_progress.append(reward)
 
+        # print(training_progress)
             # print(state, self.get_reward(self.request, state, ''), self.epsilon)
 
         # for q in self.qtable:
         #     if self.qtable[q] != 0 and self.qtable[q] != 1:
         #         print(q, self.qtable[q])
+
+        # Visualize training progress
+        plt.scatter(range(len(training_progress)), training_progress, color='blue', marker='o')
+        plt.xlabel('Time')
+        plt.ylabel('Reward')
+        plt.title('Training Progress')
+        plt.grid(True)
+        plt.show()
+
         return self.qtable
 
-    def find_best_schedule(self):
+    def find_best_schedule(self, number_of_schedules):
         # use the qtable found during training to output the best schedule
-        condition = 'In Progress'
-        state = []
-        print("Finding Best Schedule")
-        while condition == 'In Progress':
-            actions = self.get_all_possible_actions(state)
-            # print(state)
-            # print(actions)
-            action = self.get_action(state, True)
-            if action == 'STOP' or self.get_num_credits(state) > 15: # Force the agent to stop after 25 credits
-                condition = 'Done'
-            next_state, reward = self.step(state, action)
-            old_state = copy.deepcopy(state)
-            state = next_state
-        print("Best Schedule - Reward:", self.get_reward(self.request, state, ""), "Credits:",self.get_num_credits(state))
-        for s in state:
-            if s != 'STOP':
-                course = self.course_list[s]
-                print(course['Mnemonic'], course['Number'], course['Title'], course['Days'])
+        print("Finding Best Schedule(s)")
+        restricted_states = []
+
+        # Repeatedly find a good schedule
+        for i in range(number_of_schedules):
+            condition = 'In Progress'
+            state = []
+            while condition == 'In Progress':
+                actions = self.get_all_possible_actions(state)
+                allowed_actions = set(actions) - set(restricted_states)
+
+                action = self.get_action(state, True, list(allowed_actions))
+
+                # To generate unique schedules, prevent a course from being chosen again unless it was user-requested
+                if action != 'STOP':
+                    isCourseDesired = False
+                    for k in self.request['DesiredCourses']:
+                        if self.course_list[action]['Mnemonic'] == k['Mnemonic'] and self.course_list[action]['Number'] == k['Number']:
+                            isCourseDesired = True
+                            continue
+                    if not isCourseDesired:
+                        restricted_states.append(action)
+
+                if action == 'STOP' or self.get_num_credits(state) > 25: # Force the agent to stop after 25 credits
+                    condition = 'Done'
+                next_state, reward = self.step(state, action)
+                old_state = copy.deepcopy(state)
+                state = next_state
+            print()
+            print("Schedule - Reward:", self.get_reward(self.request, state, ""), "Credits:",self.get_num_credits(state))
+            for s in state:
+                if s != 'STOP':
+                    course = self.course_list[s]
+                    print(course['Mnemonic'], course['Number'], course['Title'], course['Days'])
 
 
 
