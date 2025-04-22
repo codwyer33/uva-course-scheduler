@@ -125,6 +125,30 @@ class Agent:
             reward += 5
         if self.get_num_credits(state + [action]) > request['MaxCredits']:
             reward -= 100
+        
+        #time priorities
+        if 'Morning' in request['PreferredTimes']:
+            for class_number in state + [action]:
+                if class_number in self.course_list:
+                    for day in self.course_list[class_number]['Times']:
+                        if day['EndTime'] <= 720:
+                            reward += 3
+        
+        if 'Afternoon' in request['PreferredTimes']:
+            for class_number in state + [action]:
+                if class_number in self.course_list:
+                    for day in self.course_list[class_number]['Times']:
+                        if day['StartTime'] >= 720 and day['EndTime'] <= 1020:
+                            reward += 3
+
+
+        if 'Evening' in request['PreferredTimes']:
+            for class_number in state + [action]:
+                if class_number in self.course_list:
+                    for day in self.course_list[class_number]['Times']:
+                        if day['StartTime'] >= 1020:
+                            reward += 3
+
         return reward
 
         # for s in state:

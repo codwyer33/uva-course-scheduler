@@ -5,7 +5,7 @@ def main():
     episodes = 1000
 
     parser = Parser()
-    course_dict = parser.parse_csv_into_dict('classes2.csv')
+    course_dict = parser.parse_csv_into_dict('classes.csv')
     course_dict = parser.remove_extra_courses(course_dict)
     parser.parse_times(course_dict)
     course_dict = parser.consolidate_lectures_and_discussions(course_dict)
@@ -17,7 +17,8 @@ def main():
                                     {'Mnemonic': 'CS', 'Number': '3710'}],
                'MaxCredits': 19,
                'MinCredits': 14,
-               'Keywords': ['human', 'database', 'design', 'system']
+               'Keywords': ['human', 'database', 'design', 'system'],
+               'PreferredTimes' : ['Afternoon', 'Evening']
                }
 
     epsilon = 1.0
