@@ -3,6 +3,7 @@ import csv
 import pickle
 import re
 import random
+import matplotlib.pyplot as plt
 
 class Agent:
     def __init__(self, course_list, episodes, request, epsilon, epsilon_decay, min_epsilon, gamma, alpha):
@@ -183,6 +184,7 @@ class Agent:
 
     # Training function based off of HW4 RL
     def train(self):
+        training_progress = []
         for _ in range(self.episodes):
             condition = 'In Progress'
             state = []
@@ -200,12 +202,23 @@ class Agent:
                 self.update_qtable(old_state, action, reward, next_state)
             # Update the epsilon value
             self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
+            training_progress.append(reward)
 
+        # print(training_progress)
             # print(state, self.get_reward(self.request, state, ''), self.epsilon)
 
         # for q in self.qtable:
         #     if self.qtable[q] != 0 and self.qtable[q] != 1:
         #         print(q, self.qtable[q])
+
+        # Visualize training progress
+        plt.scatter(range(len(training_progress)), training_progress, color='blue', marker='o')
+        plt.xlabel('Time')
+        plt.ylabel('Reward')
+        plt.title('Training Progress')
+        plt.grid(True)
+        plt.show()
+
         return self.qtable
 
     def find_best_schedule(self, number_of_schedules):
