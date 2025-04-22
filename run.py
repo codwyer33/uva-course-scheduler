@@ -5,7 +5,7 @@ def main():
     episodes = 1000
 
     parser = Parser()
-    course_dict = parser.parse_csv_into_dict('searchData.csv')
+    course_dict = parser.parse_csv_into_dict('classes.csv')
     course_dict = parser.remove_extra_courses(course_dict)
     parser.parse_times(course_dict)
     course_dict = parser.consolidate_lectures_and_discussions(course_dict)
@@ -24,10 +24,10 @@ def main():
                }
 
     epsilon = 1.0
-    min_epsilon = .01
-    epsilon_decay = .99999
-    gamma = .95
-    alpha = .9
+    min_epsilon = .05
+    epsilon_decay = .997
+    gamma = .5
+    alpha = .5
 
     agent = Agent(course_dict, episodes, request, epsilon, epsilon_decay, min_epsilon, gamma, alpha)
     agent.init_qtable()

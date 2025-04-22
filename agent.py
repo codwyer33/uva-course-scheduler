@@ -45,7 +45,6 @@ class Agent:
                 all_actions = self.course_list[state[-1]]['RequiredSections']
                 return all_actions
 
-            #
             # if course == state[-1] and 'RequiredSections' in self.course_list[course]:
             #         all_actions = self.course_list['RequiredSections']
             #         return all_actions
@@ -78,6 +77,8 @@ class Agent:
 
         # Select random action
         if random.random() < true_epsilon and not chooseBestAction:
+            # if random.random() < .05: #Force a higher likelihood of choosing stop
+            #     return 'STOP'
             return random.choice(actions)
         else: # Select best action
             best_action = actions[0]
@@ -116,55 +117,69 @@ class Agent:
         for desired_course in request['DesiredCourses']:
             for selected_course in state + [action]:
                 if selected_course in self.course_list:
-                    if self.course_list[selected_course]['Mnemonic'] == desired_course['Mnemonic']:
-                        reward += 10
+                    # if self.course_list[selected_course]['Mnemonic'] == desired_course['Mnemonic']:
+                    #     reward += 10
                     if self.course_list[selected_course]['Mnemonic'] == desired_course['Mnemonic'] and self.course_list[selected_course]['Number'] == desired_course['Number']:
-                        reward += 30
+                        # print("reward +30")
+                        reward += 40
+                        break
 
         for word in request['Keywords']:
             for class_number in state + [action]:
                 if class_number in self.course_list:
                     if word in self.course_list[class_number]['Description']:
                             reward += 1
-        
 
-        if self.get_num_credits(state + [action]) > request['MinCredits'] :
-            reward += 5
-        if self.get_num_credits(state + [action]) > request['MaxCredits']:
-            reward -= 100
-        
+        # if self.get_num_credits(state + [action]) > request['MinCredits'] :
+        #     reward += 5
+        # if self.get_num_credits(state + [action]) > request['MaxCredits']:
+        #     reward -= 100
+
+        # if self.get_num_credits(state + [action]) > request['MinCredits'] :
+        #     if self.get_num_credits(state + [action]) < request['MaxCredits']:
+        #         reward += 100
+
         #time priorities
         if 'Morning' in request['PreferredTimes']:
             for class_number in state + [action]:
                 if class_number in self.course_list:
                     for day in self.course_list[class_number]['Times']:
                         if day['EndTime'] <= 720:
-                            reward += 3
+                            # print("reward +3 morning")
+                            reward += 1
         
         if 'Afternoon' in request['PreferredTimes']:
             for class_number in state + [action]:
                 if class_number in self.course_list:
                     for day in self.course_list[class_number]['Times']:
                         if day['StartTime'] >= 720 and day['EndTime'] <= 1020:
-                            reward += 3
-
+                            # print("reward +3 afternoon")
+                            reward += 1
 
         if 'Evening' in request['PreferredTimes']:
             for class_number in state + [action]:
                 if class_number in self.course_list:
                     for day in self.course_list[class_number]['Times']:
                         if day['StartTime'] >= 1020:
-                            reward += 3
+                            # print("reward +3 evening")
+                            reward += 1
 
         if request['LunchBreak']:
-            lunch = True
+            lunchLate = True
+            lunchEarly = True
             for class_number in state + [action]:
                 if class_number in self.course_list:
                     for day in self.course_list[class_number]['Times']:
                         if day['StartTime'] <= 840 and day['EndTime'] >= 780:
-                            lunch = False
-            if lunch:
-                reward += 20
+                            lunchLate = False
+                        if day['StartTime'] <= 780 and day['EndTime'] >= 720:
+                            lunchLate = False
+            if lunchLate or lunchEarly:
+                # print("reward +20 lunch")
+                reward += 15
+
+        # if action == 'STOP':
+        #     reward += 15
 
         return reward
 
@@ -194,7 +209,7 @@ class Agent:
             # if self.qtable[tuple(sorted(tuple(next_state) + (option, )))] > max_next_q:
             #     max_next_q = self.qtable[tuple(sorted(tuple(next_state) + (option, )))]
 
-        sample = reward + max_next_q
+        sample = reward + (max_next_q * self.gamma)
         old_key = tuple(old_state) + (action,)
         if old_key not in self.qtable:
             self.qtable[old_key] = 0
@@ -229,18 +244,25 @@ class Agent:
                 action = self.get_action(state, False, "")
                 # print("a", action)
 
-                if 'STOP' in state or self.get_num_credits(state) > 15: # Force the agent to stop after 25 credits
+                if 'STOP' in state or self.get_num_credits(state) >= self.request['MaxCredits']: # Force the agent to stop above the desired max
                     condition = 'Done'
 
                 next_state, reward = self.step(state, action)
                 old_state = copy.deepcopy(state)
                 state = next_state
                 self.update_qtable(old_state, action, reward, next_state)
+
             # Update the epsilon value
             self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
+            print(self.epsilon)
             training_progress.append(reward)
 
-        # print(training_progress)
+            # print("Schedule - Reward:", self.get_reward(self.request, state, ""), "Credits:",self.get_num_credits(state))
+            # for s in state:
+            #     if s != 'STOP':
+            #         course = self.course_list[s]
+            #         print(course['Mnemonic'], course['Number'], course['Title'], course['Days'])
+
             # print(state, self.get_reward(self.request, state, ''), self.epsilon)
 
         # for q in self.qtable:
@@ -282,11 +304,17 @@ class Agent:
                     if not isCourseDesired:
                         restricted_states.append(action)
 
-                if action == 'STOP' or self.get_num_credits(state) > 25: # Force the agent to stop after 25 credits
-                    condition = 'Done'
-                next_state, reward = self.step(state, action)
                 old_state = copy.deepcopy(state)
+                next_state, reward = self.step(state, action)
                 state = next_state
+
+                # print(self.get_num_credits(state))
+                if action == 'STOP': # Force the agent to stop after 25 credits
+                    condition = 'Done'
+                elif self.get_num_credits(state) > self.request['MaxCredits']: # if we went over the limit, backtrack and finish
+                    condition = 'Done'
+                    state = old_state
+
             print()
             print("Schedule - Reward:", self.get_reward(self.request, state, ""), "Credits:",self.get_num_credits(state))
             for s in state:
