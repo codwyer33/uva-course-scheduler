@@ -18,7 +18,7 @@ def main():
                'MaxCredits': 19,
                'MinCredits': 14,
                'Keywords': ['human', 'database', 'design', 'system'],
-               'NumberOfSchedules': 3
+               'NumberOfSchedules': 3,
                'PreferredTimes' : ['Morning', 'Afternoon'],
                'LunchBreak': True
                }
