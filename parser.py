@@ -107,6 +107,10 @@ class Parser:
                 del new_list[course]
             elif int(course_list[course]['Number']) >= 6000:
                 del new_list[course]
+            elif int(course_list[course]['Mnemonic'] == "EGMT"):
+                del new_list[course]
+            elif int(course_list[course]['Mnemonic'] =="ESL"):
+                del new_list[course]
         return new_list
 
 

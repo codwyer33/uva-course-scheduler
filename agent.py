@@ -29,7 +29,7 @@ class Agent:
     def init_qtable(self):
         for course in self.course_list:
             if course in self.request['DesiredCourses']:
-                self.qtable[course] = 10
+                self.qtable[course] = 50
             else:
                 self.qtable[course] = 0.0
 
@@ -127,21 +127,26 @@ class Agent:
     def get_reward(self, request, state, action):
         # return reward
         reward = 0
+        numberOfDesiredCourses = 0
         for desired_course in request['DesiredCourses']:
             for selected_course in state + [action]:
                 if selected_course in self.course_list:
                     if self.course_list[selected_course]['Mnemonic'] == desired_course['Mnemonic']:
-                        reward += 20
+                        reward += 5
                     if self.course_list[selected_course]['Mnemonic'] == desired_course['Mnemonic'] and self.course_list[selected_course]['Number'] == desired_course['Number']:
                         # print("reward +30")
-                        reward += 50
+                        numberOfDesiredCourses += 1
+                        reward += 70
                         break
+        
+        if numberOfDesiredCourses >= len(request['DesiredCourses']):
+            reward += 80
 
         for word in request['Keywords']:
             for class_number in state + [action]:
                 if class_number in self.course_list:
                     if word in self.course_list[class_number]['Description']:
-                            reward += 1
+                            reward += 5
 
         # if self.get_num_credits(state + [action]) > request['MinCredits'] :
         #     reward += 5
@@ -159,7 +164,7 @@ class Agent:
                     for day in self.course_list[class_number]['Times']:
                         if day['EndTime'] <= 720:
                             # print("reward +3 morning")
-                            reward += 1
+                            reward += 2
         
         if 'Afternoon' in request['PreferredTimes']:
             for class_number in state + [action]:
@@ -167,7 +172,7 @@ class Agent:
                     for day in self.course_list[class_number]['Times']:
                         if day['StartTime'] >= 720 and day['EndTime'] <= 1020:
                             # print("reward +3 afternoon")
-                            reward += 1
+                            reward += 2
 
         if 'Evening' in request['PreferredTimes']:
             for class_number in state + [action]:
@@ -175,7 +180,7 @@ class Agent:
                     for day in self.course_list[class_number]['Times']:
                         if day['StartTime'] >= 1020:
                             # print("reward +3 evening")
-                            reward += 1
+                            reward += 2
 
         if request['LunchBreak']:
             lunchLate = True
@@ -189,7 +194,7 @@ class Agent:
                             lunchLate = False
             if lunchLate or lunchEarly:
                 # print("reward +20 lunch")
-                reward += 15
+                reward += 10
 
         # if action == 'STOP':
         #     reward += 15
