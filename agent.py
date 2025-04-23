@@ -65,6 +65,16 @@ class Agent:
 
         filtered_actions.append('STOP')
         return filtered_actions
+    
+    def get_random_cs_courses(self, state, actionList):
+        csActions = []
+        for key in self.course_list:
+            if(self.course_list[key]['Mnemonic'] == 'CS'):
+                csActions.append(key)
+        return csActions
+
+
+
 
     def get_action(self, state, chooseBestAction, actionsList):
         # using epilson greedy, pick the current best or random action
@@ -79,7 +89,11 @@ class Agent:
         if random.random() < true_epsilon and not chooseBestAction:
             # if random.random() < .05: #Force a higher likelihood of choosing stop
             #     return 'STOP'
-            return random.choice(actions)
+            if random.random() < 0.1:
+                csActions = self.get_random_cs_courses(state, actions)
+                return random.choice(csActions)
+            else:
+                return random.choice(actions)
         else: # Select best action
             best_action = actions[0]
             state_key = tuple(state)
@@ -117,11 +131,11 @@ class Agent:
         for desired_course in request['DesiredCourses']:
             for selected_course in state + [action]:
                 if selected_course in self.course_list:
-                    # if self.course_list[selected_course]['Mnemonic'] == desired_course['Mnemonic']:
-                    #     reward += 10
+                    if self.course_list[selected_course]['Mnemonic'] == desired_course['Mnemonic']:
+                        reward += 20
                     if self.course_list[selected_course]['Mnemonic'] == desired_course['Mnemonic'] and self.course_list[selected_course]['Number'] == desired_course['Number']:
                         # print("reward +30")
-                        reward += 40
+                        reward += 50
                         break
 
         for word in request['Keywords']:

@@ -5,7 +5,7 @@ def main():
     episodes = 1000
 
     parser = Parser()
-    course_dict = parser.parse_csv_into_dict('classes.csv')
+    course_dict = parser.parse_csv_into_dict('searchData.csv')
     course_dict = parser.remove_extra_courses(course_dict)
     parser.parse_times(course_dict)
     course_dict = parser.consolidate_lectures_and_discussions(course_dict)
@@ -13,7 +13,7 @@ def main():
     # for course in course_dict:
     #     print(course_dict[course])
 
-    request = {'DesiredCourses': [ {'Mnemonic': 'CS', 'Number': '2100'},
+    request = {'DesiredCourses': [ {'Mnemonic': 'CS', 'Number': '3100'},
                                     {'Mnemonic': 'CS', 'Number': '3710'}],
                'MaxCredits': 19,
                'MinCredits': 14,
