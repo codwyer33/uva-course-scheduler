@@ -94,6 +94,7 @@ class Parser:
 
         # return course_list
 
+    # Filter out courses that have incomplete data or are not typical undergraduate courses
     def remove_extra_courses(self, course_list):
         # Remove independent studies and courses with no time for now
         new_list = copy.deepcopy(course_list)
@@ -107,3 +108,91 @@ class Parser:
             elif int(course_list[course]['Number']) >= 6000:
                 del new_list[course]
         return new_list
+
+
+    # Add prereqs for CS courses through manually assembled list
+    def add_prereqs(self, course_list):
+
+        prereq_list = {('CS', '2100'): [['CS 1100'], ['CS 1111'], ['CS 1112'], ['CS 1113']],
+                       ('CS', '2120'): [['CS 1100'], ['CS 1111'], ['CS 1112'], ['CS 1113']],
+                       ('CS', '2130'): [['CS 1100'], ['CS 1111'], ['CS 1112'], ['CS 1113']],
+                       ('CS', '3100'): [['CS 2100', 'CS 2120', 'APMA 1090'],
+                                        ['CS 2100', 'CS 2120', 'APMA 1310'],
+                                        ['CS 2100', 'CS 2120', 'APMA 1210'],
+                                        ['CS 2100', 'CS 2120', 'APMA 1110']],
+                       ('CS', '3120'): [['CS 3100']],
+                       ('CS', '3130'): [['CS 2100', 'CS 2130']],
+                       ('CS', '3140'): [['CS 2100']],
+                       ('CS', '3205'): [['CS 2110'], ['CS 2100']],
+                       ('CS', '3240'): [['CS 2150'], ['CS 3140']],
+                       ('CS', '3250'): [['CS 2150'], ['CS 2100', 'CS 2120']],
+                       ('CS', '3710'): [['CS 2150'], ['CS 2100']],
+                       ('CS', '4260'): [['CS 3240']],
+                       ('CS', '4444'): [['CS 3100', 'CS 3130']],
+                       ('CS', '4457'): [['CS 3330'],
+                                        ['CS 2501'],
+                                        ['ECE 3420'],
+                                        ['ECE 4435'],
+                                        ['ECE 3502'],
+                                        ['CS 3130']],
+                       ('CS', '4610'): [['CS 2150'], ['CS 2120', 'CS 3140']],
+                       ('CS', '4630'): [['CS 3710']],
+                       ('CS', '4710'): [['CS 2150'], ['CS 3140']],
+                       ('CS', '4720'): [['CS 2150'], ['CS 3140']],
+                       ('CS', '4740'): [['CS 2150'], ['CS 3140']],
+                       ('CS', '4750'): [['CS 2150'], ['CS 2120', 'CS 3140']],
+                       ('CS', '4774'): [['CS 3100', 'APMA 3100', 'MATH 3350'],
+                                        ['CS 3100', 'APMA 3100', 'APMA 3080'],
+                                        ['CS 3100', 'APMA 3110', 'MATH 3350'],
+                                        ['CS 3100', 'APMA 3110', 'APMA 3080'],
+                                        ['CS 3100', 'MATH 3100', 'MATH 3350'],
+                                        ['CS 3100', 'MATH 3100', 'APMA 3080']],
+                       ('CS', '4971'): [['CS 4970']],
+                       ('CS', '4980'): [['CS 3140']],
+                       ('CS', '4998'): [['CS 2150'], ['CS 2501']],
+                       ('CS', '6111'): [['CS 4457']]}
+
+        for key in prereq_list:
+            for course_key in course_list:
+                if course_list[course_key]['Mnemonic'] == key[0] and course_list[course_key]['Number'] == key[1]:
+                    course_list[course_key]['Prerequisites'] = prereq_list[key]
+
+        return course_list
+
+    def passed_course(self, course, courses_taken): #Returns true if student get C- or better
+        if course not in courses_taken:
+            return False
+        grade = courses_taken[course]
+        accepted = ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-']
+        return grade in accepted
+
+    # Remove courses a student doesn't have the prereqs for
+    def filter_course_list_by_prereqs_fulfilled(self, courses_dict, courses_taken):
+        filtered_courses = {}
+
+        for course_key, course_info in courses_dict.items():
+            if 'Prerequisites' not in course_info:
+                filtered_courses[course_key] = course_info
+                continue
+
+            prereq_options = course_info['Prerequisites']
+
+            # Check if any prereq option is fully satisfied
+            fulfills_any_option = any(
+                all(self.passed_course(prereq, courses_taken) for prereq in option)
+                for option in prereq_options
+            )
+
+            if fulfills_any_option:
+                filtered_courses[course_key] = course_info
+            # if not fulfills_any_option:
+            #     print(course_info)
+        return filtered_courses
+
+    def remove_already_taken_courses(self, course_dict, courses_taken):
+        filtered_courses = {
+            key: value for key, value in course_dict.items()
+            if not self.passed_course(f"{value['Mnemonic']} {value['Number']}", courses_taken)
+        }
+        return filtered_courses
+
