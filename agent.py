@@ -258,6 +258,7 @@ class Agent:
             condition = 'In Progress'
             state = []
             print("Episode", _)
+            avg_reward = []
             while condition == 'In Progress':
                 action = self.get_action(state, False, "")
                 # print("a", action)
@@ -266,6 +267,7 @@ class Agent:
                     condition = 'Done'
 
                 next_state, reward = self.step(state, action)
+                avg_reward.append(reward)
                 old_state = copy.deepcopy(state)
                 state = next_state
                 self.update_qtable(old_state, action, reward, next_state)
@@ -273,7 +275,7 @@ class Agent:
             # Update the epsilon value
             self.epsilon = max(self.min_epsilon, self.epsilon * self.epsilon_decay)
             print(self.epsilon)
-            training_progress.append(reward)
+            training_progress.append(sum(avg_reward) / len(avg_reward))
 
             # print("Schedule - Reward:", self.get_reward(self.request, state, ""), "Credits:",self.get_num_credits(state))
             # for s in state:
@@ -295,12 +297,13 @@ class Agent:
         plt.grid(True)
         plt.show()
 
-        return self.qtable
+        return training_progress
 
     def find_best_schedule(self, number_of_schedules):
         # use the qtable found during training to output the best schedule
         print("Finding Best Schedule(s)")
         restricted_states = []
+        eval_reward_array = []
 
         # Repeatedly find a good schedule
         for i in range(number_of_schedules):
@@ -335,10 +338,13 @@ class Agent:
 
             print()
             print("Schedule - Reward:", self.get_reward(self.request, state, ""), "Credits:",self.get_num_credits(state))
+            eval_reward_array.append(self.get_reward(self.request, state, ""))
             for s in state:
                 if s != 'STOP':
                     course = self.course_list[s]
                     print(course['Mnemonic'], course['Number'], course['Title'], course['Days'])
+
+        return eval_reward_array
 
 
 
